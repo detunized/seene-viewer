@@ -1,0 +1,65 @@
+<html>
+<head>
+    <title>Seene</title>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r61/three.min.js"></script>
+
+    <style type="text/css">
+        #model {
+            width: 512px;
+            height: 512px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        var model = (function () {
+            return {
+                width: 0,
+                height: 0,
+                renderer: null,
+                camera: null,
+                scene: null,
+                axis: null,
+
+                initialize: function (div_id) {
+                    var div = $(div_id);
+                    this.width = div.width();
+                    this.height = div.height();
+
+                    this.camera = new THREE.PerspectiveCamera(25, this.width / this.height, 1, 10000);
+                    this.camera.position.x = 1000;
+                    this.camera.position.y = 1500;
+                    this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+                    this.scene = this.create_scene();
+
+                    this.renderer = new THREE.WebGLRenderer({antialias: false});
+                    this.renderer.setSize(this.width, this.height);
+                    this.renderer.setClearColor(0, 1);
+
+                    div.append(this.renderer.domElement);
+                },
+
+                create_scene: function () {
+                    var scene = new THREE.Scene();
+                    scene.add(new THREE.AxisHelper(200));
+
+                    return scene;
+                },
+
+                render: function () {
+                    this.renderer.render(this.scene, this.camera);
+                }
+            };
+        })();
+
+        $(function () {
+            model.initialize("#model")
+            model.render();
+        });
+    </script>
+    <div id="model"></div>
+</body>
+</html>

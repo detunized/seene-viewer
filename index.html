@@ -30,8 +30,8 @@
 
                     var header = this.read_header(buffer);
 
-                    this.camera = this.create_camera(header);
                     this.scene = this.create_scene(header, buffer);
+                    this.camera = this.create_camera(header, this.scene);
 
                     this.renderer = new THREE.WebGLRenderer({antialias: false});
                     this.renderer.setSize(this.width, this.height);
@@ -40,25 +40,30 @@
                     div.append(this.renderer.domElement);
                 },
 
-                create_camera: function (header) {
-                    var camera = new THREE.PerspectiveCamera(25, this.width / this.height, 1, 10000);
-                    camera.position.x = 0;
-                    camera.position.y = 0;
-                    camera.position.z = 3;
-                    camera.lookAt(new THREE.Vector3(0, 0, 0));
+                create_camera: function (header, scene) {
+                    var camera = new THREE.PerspectiveCamera(
+                        Math.atan2(0.495 * header.camera_width, header.camera_fx) * 360 / Math.PI,
+                        this.width / this.height,
+                        .01,
+                        100
+                    );
+
+                    camera.position.set(0, 0, 1);
+                    camera.up.set(-1, 0, 0);
+                    camera.lookAt(scene.position);
 
                     return camera;
                 },
 
                 create_scene: function (header, buffer) {
                     function add_face(geometry, a, b, c) {
-                        geometry.faces.push(new THREE.Face3(a, b, c, null, null, 0));
+                        geometry.faces.push(new THREE.Face3(a, b, c));
                     }
 
                     var depthmap = new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height);
                     var geometry = new THREE.Geometry();
 
-                    // TODO: Not sure what these are. Some sort of coeficients.
+                    // TODO: Not sure what these are. Some sort of coefficients.
                     var xk = header.camera_fx / header.camera_width;
                     var yk = header.camera_fy / header.camera_height;
 
@@ -67,8 +72,8 @@
                             var depth = depthmap[y * header.depthmap_width + x];
                             geometry.vertices.push(
                                 new THREE.Vector3(
-                                    depth * ((x + .5) / header.depthmap_width - .5) / xk,
-                                    -depth * ((y + .5) / header.depthmap_height - .5) / yk,
+                                    depth * ((x + 0.5) / header.depthmap_width - 0.5) / xk,
+                                    -depth * ((y + 0.5) / header.depthmap_height - 0.5) / yk,
                                     -(depth - 1)
                                 )
                             );

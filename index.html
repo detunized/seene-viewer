@@ -28,13 +28,10 @@
                     this.width = div.width();
                     this.height = div.height();
 
-                    this.camera = new THREE.PerspectiveCamera(25, this.width / this.height, 1, 10000);
-                    this.camera.position.x = 0;
-                    this.camera.position.y = 0;
-                    this.camera.position.z = 3;
-                    this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+                    var header = this.read_header(buffer);
 
-                    this.scene = this.create_scene(buffer);
+                    this.camera = this.create_camera(header);
+                    this.scene = this.create_scene(header, buffer);
 
                     this.renderer = new THREE.WebGLRenderer({antialias: false});
                     this.renderer.setSize(this.width, this.height);
@@ -43,14 +40,22 @@
                     div.append(this.renderer.domElement);
                 },
 
-                create_scene: function (buffer) {
+                create_camera: function (header) {
+                    var camera = new THREE.PerspectiveCamera(25, this.width / this.height, 1, 10000);
+                    camera.position.x = 0;
+                    camera.position.y = 0;
+                    camera.position.z = 3;
+                    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+                    return camera;
+                },
+
+                create_scene: function (header, buffer) {
                     function add_face(geometry, a, b, c) {
                         geometry.faces.push(new THREE.Face3(a, b, c, null, null, 0));
                     }
 
-                    var header = this.read_header(buffer);
-                    var depthmap = this.read_depthmap(buffer, header);
-
+                    var depthmap = new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height);
                     var geometry = new THREE.Geometry();
 
                     // TODO: Not sure what these are. Some sort of coeficients.
@@ -117,10 +122,6 @@
                         depthmap_height: read_int(buffer, 32),
                         header_size: 36
                     };
-                },
-
-                read_depthmap: function (buffer, header) {
-                    return new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height);
                 }
             };
         })();

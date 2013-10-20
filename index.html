@@ -29,8 +29,9 @@
                     this.height = div.height();
 
                     this.camera = new THREE.PerspectiveCamera(25, this.width / this.height, 1, 10000);
-                    this.camera.position.x = 1000;
-                    this.camera.position.y = 1500;
+                    this.camera.position.x = 0;
+                    this.camera.position.y = 0;
+                    this.camera.position.z = 3;
                     this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
                     this.scene = this.create_scene(buffer);
@@ -43,10 +44,46 @@
                 },
 
                 create_scene: function (buffer) {
-                    this.read_heightmap(buffer, this.read_header(buffer));
+                    function add_face(geometry, a, b, c) {
+                        geometry.faces.push(new THREE.Face3(a, b, c, null, null, 0));
+                    }
+
+                    var header = this.read_header(buffer);
+                    var depthmap = this.read_depthmap(buffer, header);
+
+                    var geometry = new THREE.Geometry();
+
+                    // TODO: Not sure what these are. Some sort of coeficients.
+                    var xk = header.camera_fx / header.camera_width;
+                    var yk = header.camera_fy / header.camera_height;
+
+                    for (var y = 0; y < header.depthmap_height; ++y) {
+                        for (var x = 0; x < header.depthmap_width; ++x) {
+                            var depth = depthmap[y * header.depthmap_width + x];
+                            geometry.vertices.push(
+                                new THREE.Vector3(
+                                    depth * ((x + .5) / header.depthmap_width - .5) / xk,
+                                    -depth * ((y + .5) / header.depthmap_height - .5) / yk,
+                                    -(depth - 1)
+                                )
+                            );
+
+                            if (y > 0 && x > 0) {
+                                var a = (y - 1) * header.depthmap_width + x - 1;
+                                var b = (y - 1) * header.depthmap_width + x;
+                                var c = y * header.depthmap_width + x - 1;
+                                var d = y * header.depthmap_width + x;
+
+                                add_face(geometry, a, c, b);
+                                add_face(geometry, b, c, d);
+                            }
+                        }
+                    }
+
+                    var mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({wireframe: true}));
 
                     var scene = new THREE.Scene();
-                    scene.add(new THREE.AxisHelper(200));
+                    scene.add(mesh);
 
                     return scene;
                 },
@@ -82,8 +119,8 @@
                     };
                 },
 
-                read_heightmap: function (buffer, header) {
-                    console.log(new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height));
+                read_depthmap: function (buffer, header) {
+                    return new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height);
                 }
             };
         })();

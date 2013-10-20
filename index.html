@@ -23,7 +23,7 @@
                 scene: null,
                 axis: null,
 
-                initialize: function (div_id) {
+                initialize: function (div_id, buffer) {
                     var div = $(div_id);
                     this.width = div.width();
                     this.height = div.height();
@@ -33,7 +33,7 @@
                     this.camera.position.y = 1500;
                     this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-                    this.scene = this.create_scene();
+                    this.scene = this.create_scene(buffer);
 
                     this.renderer = new THREE.WebGLRenderer({antialias: false});
                     this.renderer.setSize(this.width, this.height);
@@ -42,7 +42,9 @@
                     div.append(this.renderer.domElement);
                 },
 
-                create_scene: function () {
+                create_scene: function (buffer) {
+                    this.read_heightmap(buffer, this.read_header(buffer));
+
                     var scene = new THREE.Scene();
                     scene.add(new THREE.AxisHelper(200));
 
@@ -51,13 +53,58 @@
 
                 render: function () {
                     this.renderer.render(this.scene, this.camera);
+                },
+
+                //
+                // Private stuff
+                //
+
+                read_header: function (buffer) {
+                    function read_int(buffer, offset) {
+                        return new Int32Array(buffer, offset, 1)[0];
+                    }
+
+                    function read_float(buffer, offset) {
+                        return new Float32Array(buffer, offset, 1)[0];
+                    }
+
+                    return {
+                        version: read_int(buffer, 0),
+                        camera_width: read_int(buffer, 4),
+                        camera_height: read_int(buffer, 8),
+                        camera_fx: read_float(buffer, 12),
+                        camera_fy: read_float(buffer, 16),
+                        camera_k1: read_float(buffer, 20),
+                        camera_k2: read_float(buffer, 24),
+                        depthmap_width: read_int(buffer, 28),
+                        depthmap_height: read_int(buffer, 32),
+                        header_size: 36
+                    };
+                },
+
+                read_heightmap: function (buffer, header) {
+                    console.log(new Float32Array(buffer, header.header_size, header.depthmap_width * header.depthmap_height));
                 }
             };
         })();
 
+        function load_model(callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "./scene.oemodel", true);
+            xhr.responseType = "arraybuffer";
+
+            xhr.onload = function(e) {
+                callback(this.response);
+            };
+
+            xhr.send();
+        }
+
         $(function () {
-            model.initialize("#model")
-            model.render();
+            load_model(function (buffer) {
+                model.initialize("#model", buffer)
+                model.render();
+            });
         });
     </script>
     <div id="model"></div>

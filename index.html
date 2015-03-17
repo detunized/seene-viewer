@@ -2,7 +2,8 @@
 <head>
     <title>Seene</title>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r61/three.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+    <script src="TrackballControls.js"></script>
 
     <style type="text/css">
         #model {
@@ -20,6 +21,7 @@
                 height: 0,
                 renderer: null,
                 camera: null,
+                controls: null,
                 scene: null,
                 axis: null,
 
@@ -32,6 +34,8 @@
 
                     this.scene = this.create_scene(header, buffer);
                     this.camera = this.create_camera(header, this.scene);
+
+                    this.controls = this.create_controls(this.camera);
 
                     this.renderer = new THREE.WebGLRenderer({antialias: false});
                     this.renderer.setSize(this.width, this.height);
@@ -53,6 +57,24 @@
                     camera.lookAt(scene.position);
 
                     return camera;
+                },
+
+                create_controls: function (camera) {
+                    var controls = new THREE.TrackballControls(camera);
+
+                    controls.target.set(0, 0, 0);
+
+                    controls.rotateSpeed = 10.0;
+                    controls.zoomSpeed = 1.2;
+                    controls.panSpeed = 0.8;
+
+                    controls.noZoom = false;
+                    controls.noPan = false;
+
+                    controls.staticMoving = false;
+                    controls.dynamicDampingFactor = 0.15;
+
+                    return controls;
                 },
 
                 create_scene: function (header, buffer) {
@@ -96,6 +118,10 @@
                     scene.add(mesh);
 
                     return scene;
+                },
+
+                update: function () {
+                    this.controls.update();
                 },
 
                 render: function () {
@@ -145,10 +171,16 @@
 
         $(function () {
             load_model(function (buffer) {
-                model.initialize("#model", buffer)
-                model.render();
+                model.initialize("#model", buffer);
+                animate();
             });
         });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            model.update();
+            model.render();
+        }
     </script>
     <div id="model"></div>
 </body>

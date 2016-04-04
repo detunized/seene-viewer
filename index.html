@@ -140,9 +140,15 @@
                     function read_float(buffer, offset) {
                         return new Float32Array(buffer, offset, 1)[0];
                     }
+                    
+                    var version = read_int(buffer, 0);
+                    var header_size = 36;
+                    if(version == 3) {
+                        header_size = 44;
+                    }
 
                     return {
-                        version: read_int(buffer, 0),
+                        version: version,
                         camera_width: read_int(buffer, 4),
                         camera_height: read_int(buffer, 8),
                         camera_fx: read_float(buffer, 12),
@@ -151,7 +157,7 @@
                         camera_k2: read_float(buffer, 24),
                         depthmap_width: read_int(buffer, 28),
                         depthmap_height: read_int(buffer, 32),
-                        header_size: 36
+                        header_size: header_size
                     };
                 }
             };
